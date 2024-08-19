@@ -7,7 +7,7 @@ namespace GTRC_Server_Basics.Models
 {
     public class TemporaryDiscordMessage
     {
-        private static readonly string path = GlobalValues.DataDirectory + "temporary discord messages.json";
+        private static readonly string path = GlobalValues.DataDirectory + "temporary discord bot messages.json";
         public static List<TemporaryDiscordMessage> List = [];
 
         public ulong MessageId { get; set; } = GlobalValues.NoDiscordId;
@@ -63,7 +63,6 @@ namespace GTRC_Server_Basics.Models
         public static void LoadJson()
         {
             List.Clear();
-            if (!Directory.Exists(GlobalValues.DataDirectory)) { Directory.CreateDirectory(GlobalValues.DataDirectory); }
             if (!File.Exists(path)) { File.WriteAllText(path, JsonConvert.SerializeObject(List, Formatting.Indented), Encoding.Unicode); }
             try { List = JsonConvert.DeserializeObject<List<TemporaryDiscordMessage>>(File.ReadAllText(path, Encoding.Unicode)) ?? []; }
             catch { GlobalValues.CurrentLogText = "Load temporary discord messages failed!"; }
