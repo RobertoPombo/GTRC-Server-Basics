@@ -275,7 +275,68 @@ namespace GTRC_Server_Basics.Discord
         public static async Task ShowEntrylist(Event _event, bool showCars = false)
         {
             await SetDiscordChannelIds(_event.Season.SeriesId);
-            string message = "Die Starterliste funktioniert noch nicht.";/*
+
+
+            //Placeholder
+            int slotsTakenTotal = 0;
+            int slotsAvailableTotal = _event.Track.ServerSlotsCount;
+            List<EntryEvent> listEntriesEvents = [];
+            List<Entry> listEntries = (await DbApi.DynCon.Entry.GetChildObjects(typeof(Season), _event.SeasonId)).List;
+            List<Event> listEvents = Scripts.SortByDate((await DbApi.DynCon.Event.GetChildObjects(typeof(Season), _event.SeasonId)).List);
+            foreach (Entry entry in listEntries)
+            {
+                EntryEventUniqPropsDto0 dto = new() { EntryId = entry.Id, EventId = _event.Id };
+                listEntriesEvents.Add((await DbApi.DynCon.EntryEvent.GetAnyByUniqProps(dto)).Object);
+            }
+            for (int index1 = 0; index1 < listEntriesEvents.Count - 1; index1++)
+            {
+                if (EntryEventFullDto.GetRegisterState(listEntriesEvents[index1]) && EntryEventFullDto.GetSignInState(listEntriesEvents[index1])) { slotsTakenTotal++; }
+                for (int index2 = index1 + 1; index2 < listEntriesEvents.Count; index2++)
+                {
+                    if (listEntriesEvents[index1].Entry.RaceNumber > listEntriesEvents[index2].Entry.RaceNumber)
+                    {
+                        (listEntriesEvents[index1], listEntriesEvents[index2]) = (listEntriesEvents[index2], listEntriesEvents[index1]);
+                    }
+                }
+            }
+            string message = "**Starterfeld für Event " + _event.Name + Scripts.Date2String(_event.Date, " (DD.MM.YY)") + " | " +
+                slotsTakenTotal.ToString() + "/" + slotsAvailableTotal.ToString() + "**\n";
+            string newMessagePart = "";
+            uint pos = 1;
+            foreach (EntryEvent entryEvent in listEntriesEvents)
+            {
+                if (EntryEventFullDto.GetRegisterState(entryEvent) && EntryEventFullDto.GetSignInState(entryEvent))
+                {
+                    (newMessagePart, pos) = await AddLineEntrylist(newMessagePart, pos, entryEvent, showCars, showCars);
+                }
+            }
+            if (pos > 1) { message += newMessagePart; } else { message += "-\n"; }
+
+            newMessagePart = "";
+            pos = 1;
+            foreach (EntryEvent entryEvent in listEntriesEvents)
+            {
+                if (EntryEventFullDto.GetRegisterState(entryEvent) && !EntryEventFullDto.GetSignInState(entryEvent))
+                {
+                    (newMessagePart, pos) = await AddLineEntrylist(newMessagePart, pos, entryEvent, showCars, showCars);
+                }
+            }
+            if (pos > 1) { message += "\n**Abmeldungen (" + (pos - 1).ToString() + ")**\n" + newMessagePart; }
+
+            newMessagePart = "";
+            pos = 1;
+            foreach (EntryEvent entryEvent in listEntriesEvents)
+            {
+                if (!EntryEventFullDto.GetRegisterState(entryEvent) && listEvents.Count > 0 && entryEvent.Entry.SignOutDate > listEvents[0].Date)
+                {
+                    (newMessagePart, pos) = await AddLineEntrylist(newMessagePart, pos, entryEvent, showCars, showCars);
+                }
+            }
+            if (pos > 1) { message += "\n**Aus der Meisterschaft zurückgezogen (" + (pos - 1).ToString() + ")**\n" + newMessagePart; }
+            //Placeholder
+
+
+            /*
             bool isBanned = false;
             foreach (User user in listUsers)
             {
@@ -299,7 +360,7 @@ namespace GTRC_Server_Basics.Discord
             if (respObjEntDat.Status == HttpStatusCode.OK) { car = respObjEntDat.Object.Car; }
 
             if (showPos) { message += pos.ToString() + ".  "; }
-            message += entry.RaceNumber.ToString() + "  ";
+            message += "#" + entry.RaceNumber.ToString() + "  ";
             for (int index = 0; index < listUsers.Count; index++)
             {
                 if (index > 0) { message += ", "; }
