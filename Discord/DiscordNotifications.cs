@@ -267,7 +267,7 @@ namespace GTRC_Server_Basics.Discord
                 if (listDrivers.Count > 1) { message += "eure"; } else { message += "deine"; }
                 message += " neue Startnummer vorläufig die #" + entry.RaceNumber.ToString() + ". ";
                 if (listDrivers.Count > 1) { message += "Ihr könnt euch"; } else { message += "Du kannst dir"; }
-                message += " mit dem Befehl `!Startnummer 0` jederzeit eine neue Startnummer wünschen.";
+                message += " mit dem Befehl `!Startnummer 0` gerne eine neue Startnummer wünschen.";
                 _ = DiscordCommands.DiscordBot.SendMessage(message, ChannelIds[DiscordChannelType.Registration], DiscordMessageType.PermanentInfo);
             }
         }
@@ -299,6 +299,7 @@ namespace GTRC_Server_Basics.Discord
                     }
                 }
             }
+            //Placeholder
             string message = "**Starterfeld für Event " + _event.Name + Scripts.Date2String(_event.Date, " (DD.MM.YY)") + " | " +
                 slotsTakenTotal.ToString() + "/" + slotsAvailableTotal.ToString() + "**\n";
             string newMessagePart = "";
@@ -307,7 +308,7 @@ namespace GTRC_Server_Basics.Discord
             {
                 if (EntryEventFullDto.GetRegisterState(entryEvent) && EntryEventFullDto.GetSignInState(entryEvent))
                 {
-                    (newMessagePart, pos) = await AddLineEntrylist(newMessagePart, pos, entryEvent, showCars, showCars);
+                    (newMessagePart, pos) = await AddLineEntrylist(newMessagePart, pos, entryEvent, true, showCars);
                 }
             }
             if (pos > 1) { message += newMessagePart; } else { message += "-\n"; }
@@ -318,7 +319,7 @@ namespace GTRC_Server_Basics.Discord
             {
                 if (EntryEventFullDto.GetRegisterState(entryEvent) && !EntryEventFullDto.GetSignInState(entryEvent))
                 {
-                    (newMessagePart, pos) = await AddLineEntrylist(newMessagePart, pos, entryEvent, showCars, showCars);
+                    (newMessagePart, pos) = await AddLineEntrylist(newMessagePart, pos, entryEvent, true, showCars);
                 }
             }
             if (pos > 1) { message += "\n**Abmeldungen (" + (pos - 1).ToString() + ")**\n" + newMessagePart; }
@@ -329,11 +330,10 @@ namespace GTRC_Server_Basics.Discord
             {
                 if (!EntryEventFullDto.GetRegisterState(entryEvent) && listEvents.Count > 0 && entryEvent.Entry.SignOutDate > listEvents[0].Date)
                 {
-                    (newMessagePart, pos) = await AddLineEntrylist(newMessagePart, pos, entryEvent, showCars, showCars);
+                    (newMessagePart, pos) = await AddLineEntrylist(newMessagePart, pos, entryEvent, true, showCars);
                 }
             }
             if (pos > 1) { message += "\n**Aus der Meisterschaft zurückgezogen (" + (pos - 1).ToString() + ")**\n" + newMessagePart; }
-            //Placeholder
 
 
             /*
@@ -366,14 +366,14 @@ namespace GTRC_Server_Basics.Discord
                 if (index > 0) { message += ", "; }
                 message += UserFullDto.GetFullName(listUsers[index]);
             }
-            if (showCar && car is not null) { message += " | " + car.Name; }
+            if (showCar && car is not null) { message += "  -  " + car.Name; }
             if (showCarChangeCount && entry.IsPointScorer && entry.Season.CarChangeLimit < byte.MaxValue && entry.Season.DateStartCarChangeLimit < GlobalValues.DateTimeMaxValue)
             {
                 byte? carChangeCount = (await DbApi.DynCon.Entry.GetCarChangeCount(entry.Id, entryEvent.EventId)).Value;
                 if (carChangeCount is not null)
                 {
-                    if (carChangeCount >= entry.Season.CarChangeLimit) { message += " | **" + carChangeCount.ToString() + "/" + entry.Season.CarChangeLimit.ToString() + "**"; }
-                    else { message += " | " + carChangeCount.ToString() + "/" + entry.Season.CarChangeLimit.ToString(); }
+                    if (carChangeCount >= entry.Season.CarChangeLimit) { message += " - **" + carChangeCount.ToString() + "/" + entry.Season.CarChangeLimit.ToString() + "**"; }
+                    else { message += " - " + carChangeCount.ToString() + "/" + entry.Season.CarChangeLimit.ToString(); }
                 }
             }
             if (!entryEvent.IsPointScorer)
