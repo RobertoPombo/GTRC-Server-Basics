@@ -286,11 +286,12 @@ namespace GTRC_Server_Basics.Discord
             foreach (Entry entry in listEntries)
             {
                 EntryEventUniqPropsDto0 dto = new() { EntryId = entry.Id, EventId = _event.Id };
-                listEntriesEvents.Add((await DbApi.DynCon.EntryEvent.GetAnyByUniqProps(dto)).Object);
+                EntryEvent entryEvent = (await DbApi.DynCon.EntryEvent.GetAnyByUniqProps(dto)).Object;
+                if (EntryEventFullDto.GetRegisterState(entryEvent) && EntryEventFullDto.GetSignInState(entryEvent)) { slotsTakenTotal++; }
+                listEntriesEvents.Add(entryEvent);
             }
             for (int index1 = 0; index1 < listEntriesEvents.Count - 1; index1++)
             {
-                if (EntryEventFullDto.GetRegisterState(listEntriesEvents[index1]) && EntryEventFullDto.GetSignInState(listEntriesEvents[index1])) { slotsTakenTotal++; }
                 for (int index2 = index1 + 1; index2 < listEntriesEvents.Count; index2++)
                 {
                     if (listEntriesEvents[index1].Entry.RaceNumber > listEntriesEvents[index2].Entry.RaceNumber)
