@@ -31,7 +31,6 @@ namespace GTRC_Server_Basics.Discord
         {
             Initialize();
             DiscordBotConfig.ChangedDiscordBotIsActive += Initialize;
-            TemporaryDiscordMessage.LoadJson();
         }
 
         private Task ClientLog(LogMessage arg) { return Task.CompletedTask; }
@@ -98,6 +97,7 @@ namespace GTRC_Server_Basics.Discord
                 SocketTextChannel? channel = Client.GetGuild(Config.DiscordServerId)?.GetTextChannel(channelId);
                 if (channel is not null)
                 {
+                    TemporaryDiscordMessage.LoadJson();
                     TemporaryDiscordMessage newMessage = new() { ChannelId = channelId, Type = discordMessageType };
                     for (int index = TemporaryDiscordMessage.List.Count - 1; index >= 0; index--)
                     {
