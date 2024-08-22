@@ -56,14 +56,12 @@ namespace GTRC_Server_Basics.Discord
             {
                 int argPos = 0;
                 List<string> TagList = [];
-                TagList.Add(GetTagByDiscordId(Config.DiscordBotId));
-                TagList.Add(GetTagByDiscordId(Config.DiscordBotId, true));
-                List<string> Tags = [];
-                foreach (string _tag in TagList) { Tags.Add(_tag + " "); }
-                Tags.Add("!");
+                TagList.Add(GetTagByDiscordId(Config.DiscordBotId) + " ");
+                TagList.Add(GetTagByDiscordId(Config.DiscordBotId, true) + " ");
+                TagList.Add("!");
                 UserMessage = arg as SocketUserMessage;
                 SocketCommandContext context = new(Client, UserMessage);
-                foreach (string tag in Tags)
+                foreach (string tag in TagList)
                 {
                     if (UserMessage?.HasStringPrefix(tag, ref argPos) ?? false)
                     {
@@ -171,9 +169,9 @@ namespace GTRC_Server_Basics.Discord
 
         public static string GetTagByDiscordId(ulong discordId, bool mobileType = false)
         {
-            string tagText = string.Empty;
-            if (mobileType) { tagText += "<@!" + discordId.ToString() + "> "; }
-            else { tagText += "<@" + discordId.ToString() + "> "; }
+            string tagText;
+            if (mobileType) { tagText = "<@!" + discordId.ToString() + ">"; }
+            else { tagText = "<@" + discordId.ToString() + ">"; }
             return tagText;
         }
 
