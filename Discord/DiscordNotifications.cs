@@ -476,6 +476,7 @@ namespace GTRC_Server_Basics.Discord
                     if (eventCar.CountBop > 0)
                     {
                         message += eventCar.Count.ToString() + "x    ";
+                        if (eventCar.BallastKg > 0) { message += "+"; }
                         message += eventCar.BallastKg.ToString() + " kg    ";
                         //message += eventCar.Restrictor.ToString() + "%  ";
                         message += eventCar.Car.Name;
