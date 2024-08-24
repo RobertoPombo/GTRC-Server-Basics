@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Discord.WebSocket;
 
 using GTRC_Basics.Models.DTOs;
 using GTRC_Basics.Models;
@@ -39,6 +40,7 @@ namespace GTRC_Server_Basics.Discord
         public static async Task ShowNewRegistrations(Season season, List<Entry> newEntries, bool forceUpdateEntryConflicts = false)
         {
             await SetDiscordChannelIds(season.SeriesId);
+            await UpdateSeriesDiscordRolesAndNicknames(season);
             UniqPropsDto<SeriesDiscordchanneltype> uniqDtoSerDis = new()
             {
                 Index = 0,
@@ -75,6 +77,38 @@ namespace GTRC_Server_Basics.Discord
                 }
                 if (message.Length > 2) {  await DiscordCommands.DiscordBot.SendMessage(message[..^2], ChannelIds[DiscordChannelType.Log], DiscordMessageType.NewEntries); }
                 if (message.Length > 2 || forceUpdateEntryConflicts) { await ShowSeasonSettingsViolations(season); }
+                List<Event> listEvents = (await DbApi.DynCon.Event.GetChildObjects(typeof(Season), season.Id)).List;
+                foreach (Event _event in listEvents) { await DbApi.DynCon.EventCar.UpdateBop(_event.Id); await DbApi.DynCon.EntryUserEvent.UpdateNames3Digits(_event.Id); }
+            }
+        }
+
+        public static async Task UpdateSeriesDiscordRolesAndNicknames(Season season)
+        {
+            season = (await DbApi.DynCon.Season.GetById(1)).Object;
+            if (DiscordCommands.DiscordBot.Guild is not null)
+            {
+                SocketRole? driverRole = DiscordCommands.DiscordBot.Guild.GetRole(season.Series.DiscordDriverRoleId);
+                if (driverRole is not null)
+                {
+                    List<SocketGuildUser> listDiscordUsers = [.. DiscordCommands.DiscordBot.Guild.Users];
+                    foreach (SocketGuildUser discordUser in listDiscordUsers)
+                    {
+                        bool hasSeriesDriverRole = false;
+                        IReadOnlyCollection<SocketRole> discordRoles = discordUser.Roles;
+                        foreach (SocketRole role in discordRoles) { if (role.Id == driverRole.Id) { hasSeriesDriverRole = true; break; } }
+                        DbApiObjectResponse<User> respObjUser = await DbApi.DynCon.User.GetByUniqProps(new() { Index = 1, Dto = new UserUniqPropsDto1() { DiscordId = discordUser.Id } });
+                        if (respObjUser.Status == HttpStatusCode.OK && (await DbApi.DynCon.Entry.GetByUserSeason(respObjUser.Object.Id, season.Id)).List.Count > 0)
+                        {
+                            if (!hasSeriesDriverRole) { await discordUser.AddRoleAsync(driverRole.Id); }
+                        }
+                        else { if (hasSeriesDriverRole) { await discordUser.RemoveRoleAsync(driverRole.Id); } }
+                        if (respObjUser.Status == HttpStatusCode.OK)
+                        {
+                            string fullName = UserFullDto.GetFullName(respObjUser.Object);
+                            await discordUser.ModifyAsync(property => property.Nickname = fullName);
+                        }
+                    }
+                }
             }
         }
 
@@ -548,6 +582,30 @@ namespace GTRC_Server_Basics.Discord
                 message += "\n\n**Organisation:  " + organization.Name + "**\n";
                 message += "\n**Mitglieder:**\n";
                 List<OrganizationUser> listOrgaUser = (await DbApi.DynCon.OrganizationUser.GetChildObjects(typeof(Organization), organization.Id)).List;
+                for (int index1 = 0; index1 < listOrgaUser.Count - 1; index1++)
+                {
+                    for (int index2 = index1 + 1; index2 < listOrgaUser.Count; index2++)
+                    {
+                        if (listOrgaUser[index1].IsAdmin == listOrgaUser[index2].IsAdmin)
+                        {
+                            if (listOrgaUser[index1].IsInvited == listOrgaUser[index2].IsInvited)
+                            {
+                                if (String.Compare(listOrgaUser[index1].User.LastName, listOrgaUser[index2].User.LastName) > 0)
+                                {
+                                    (listOrgaUser[index1], listOrgaUser[index2]) = (listOrgaUser[index2], listOrgaUser[index1]);
+                                }
+                            }
+                            else if (listOrgaUser[index1].IsInvited)
+                            {
+                                (listOrgaUser[index1], listOrgaUser[index2]) = (listOrgaUser[index2], listOrgaUser[index1]);
+                            }
+                        }
+                        else if (listOrgaUser[index2].IsAdmin)
+                        {
+                            (listOrgaUser[index1], listOrgaUser[index2]) = (listOrgaUser[index2], listOrgaUser[index1]);
+                        }
+                    }
+                }
                 foreach (OrganizationUser orgaUser in listOrgaUser)
                 {
                     message += "- " + UserFullDto.GetFullName(orgaUser.User);
@@ -557,6 +615,16 @@ namespace GTRC_Server_Basics.Discord
                 }
                 message += "\n**Teams:**\n";
                 List<Team> listTeams = (await DbApi.DynCon.Team.GetChildObjects(typeof(Organization), organization.Id)).List;
+                for (int index1 = 0; index1 < listTeams.Count - 1; index1++)
+                {
+                    for (int index2 = index1 + 1; index2 < listTeams.Count; index2++)
+                    {
+                        if (String.Compare(listTeams[index1].Name, listTeams[index2].Name) > 0)
+                        {
+                            (listTeams[index1], listTeams[index2]) = (listTeams[index2], listTeams[index1]);
+                        }
+                    }
+                }
                 List<Entry> listEntries = [];
                 foreach (Team team in listTeams)
                 {
@@ -570,7 +638,21 @@ namespace GTRC_Server_Basics.Discord
                 {
                     for (int index2 = index1 + 1; index2 < listEntries.Count; index2++)
                     {
-                        if (listEntries[index1].Season.DateStartRegistration > listEntries[index2].Season.DateStartRegistration)
+                        if (listEntries[index1].SeasonId == listEntries[index2].SeasonId)
+                        {
+                            if (listEntries[index1].RaceNumber == listEntries[index2].RaceNumber)
+                            {
+                                if (String.Compare(listEntries[index1].Team.Name, listEntries[index2].Team.Name) > 0)
+                                {
+                                    (listEntries[index1], listEntries[index2]) = (listEntries[index2], listEntries[index1]);
+                                }
+                            }
+                            else if (listEntries[index1].RaceNumber > listEntries[index2].RaceNumber)
+                            {
+                                (listEntries[index1], listEntries[index2]) = (listEntries[index2], listEntries[index1]);
+                            }
+                        }
+                        else if (listEntries[index1].SeasonId > listEntries[index2].SeasonId)
                         {
                             (listEntries[index1], listEntries[index2]) = (listEntries[index2], listEntries[index1]);
                         }

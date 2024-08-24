@@ -20,11 +20,12 @@ namespace GTRC_Server_Basics.Discord
         private CommandService commands = new();
         private InteractionService? interactions;
         private IServiceProvider? services;
-        private DiscordSocketConfig socketConfig = new() { AlwaysDownloadUsers = false, GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent };
+        private DiscordSocketConfig socketConfig = new() { AlwaysDownloadUsers = true, GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent | GatewayIntents.GuildMembers };
 
         public DiscordSocketClient? Client;
         public DiscordBotConfig? Config;
 
+        public SocketGuild? Guild;
         public SocketUserMessage? UserMessage;
 
         public DiscordBot()

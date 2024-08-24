@@ -92,6 +92,7 @@ namespace GTRC_Server_Basics.Discord
             IsError = false;
             UserMessage = userMessage;
             UserMessage ??= Context?.Message ?? null;
+            if (Context is not null && Context.Guild is not null) { DiscordBot.Guild = Context.Guild; }
             ChannelId = GlobalValues.NoDiscordId;
             Date = DateTime.UtcNow;
             AuthorDiscordId = GlobalValues.NoDiscordId;
