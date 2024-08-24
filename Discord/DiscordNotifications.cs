@@ -104,7 +104,7 @@ namespace GTRC_Server_Basics.Discord
                         if (respObjUser.Status == HttpStatusCode.OK)
                         {
                             string fullName = UserFullDto.GetFullName(respObjUser.Object);
-                            try { await discordUser.ModifyAsync(property => property.Nickname = fullName); } catch { }
+                            if (discordUser.Nickname != fullName) { try { await discordUser.ModifyAsync(property => property.Nickname = fullName); } catch { } }
                         }
                     }
                 }
