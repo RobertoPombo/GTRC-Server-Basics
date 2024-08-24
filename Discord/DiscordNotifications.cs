@@ -409,8 +409,8 @@ namespace GTRC_Server_Basics.Discord
         public static async Task ShowBop(Season season, Event _event)
         {
             await SetDiscordChannelIds(season.SeriesId);
-            List<EventCar> listEventsCars = (await DbApi.DynCon.EventCar.GetChildObjects(typeof(Event), _event.Id)).List;
             string message = "Keine BoP für das Event " + _event.Name + bScripts.Date2String(_event.Date, " (DD.MM.YY") + ") gefunden.";
+            List<EventCar> listEventsCars = (await DbApi.DynCon.EventCar.UpdateBop(_event.Id)).List;
             if (listEventsCars.Count > 0)
             {
                 for (int index1 = 0; index1 < listEventsCars.Count - 1; index1++)
@@ -442,10 +442,17 @@ namespace GTRC_Server_Basics.Discord
                 {
                     if (eventCar.CountBop > 0)
                     {
-                        message += eventCar.CountBop.ToString() + "x\t";
-                        message += eventCar.BallastKg.ToString() + " kg\t";
-                        //message += eventCar.Restrictor.ToString() + "%\t";
-                        message += eventCar.Car.Name + "\n";
+                        message += eventCar.Count.ToString() + "x    ";
+                        message += eventCar.BallastKg.ToString() + " kg    ";
+                        //message += eventCar.Restrictor.ToString() + "%  ";
+                        message += eventCar.Car.Name;
+                        if (_event.Season.DateBoPFreeze < _event.Date && eventCar.Count != eventCar.CountBop)
+                        {
+                            message += "    " + eventCar.CountBop.ToString() + "x am " +
+                                bScripts.Date2String(_event.Season.DateBoPFreeze.ToLocalTime(), "DD.MM.YY") + " um " +
+                                bScripts.Date2String(_event.Season.DateBoPFreeze.ToLocalTime(), "hh:mm") + " Uhr";
+                        }
+                        message += "\n";
                     }
                 }
             }
