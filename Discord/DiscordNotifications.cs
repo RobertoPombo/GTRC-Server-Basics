@@ -559,7 +559,7 @@ namespace GTRC_Server_Basics.Discord
                 }
                 if (isValidCarclass && (userIsAdmin || (respValIsLatestModel.Value ?? false)))
                 {
-                    message += car.AccCarId.ToString() + "  ";
+                    message += "#" + car.AccCarId.ToString() + "  -  ";
                     message += car.Name;
                     message += " (" + car.Year.ToString() + ")";
                     if (respObjEveCar.Status == HttpStatusCode.OK && respObjEveCar.Object.CountBop > 0)
@@ -574,7 +574,7 @@ namespace GTRC_Server_Basics.Discord
             _ = DiscordCommands.DiscordBot.SendMessage(message, channelId, DiscordMessageType.Cars);
         }
 
-        public static async Task ShowOrganizations(ulong channelId, List<Organization> listOrganizations, bool userIsAdmin)
+        public static async Task ShowOrganizations(Season season, ulong channelId, List<Organization> listOrganizations, bool userIsAdmin)
         {
             string message = string.Empty;
             foreach (Organization organization in listOrganizations)
@@ -628,11 +628,12 @@ namespace GTRC_Server_Basics.Discord
                 List<Entry> listEntries = [];
                 foreach (Team team in listTeams)
                 {
-                    message += "- " + team.Name;
-                    if (userIsAdmin) { message += "  |  Id=" + team.Id.ToString(); }
-                    message += "\n";
+                    message += "- #" + team.Id.ToString() + "  -  " + team.Name + "\n";
                     List<Entry> listEntriesTemp = (await DbApi.DynCon.Entry.GetChildObjects(typeof(Team), team.Id)).List;
-                    foreach (Entry entry in listEntriesTemp) { if (!bScripts.ListContainsId(listEntries, entry)) { listEntries.Add(entry); } }
+                    foreach (Entry entry in listEntriesTemp)
+                    {
+                        if (!bScripts.ListContainsId(listEntries, entry) && (userIsAdmin || entry.SeasonId == season.Id)) { listEntries.Add(entry); }
+                    }
                 }
                 for (int index1 = 0; index1 < listEntries.Count - 1; index1++)
                 {
@@ -658,17 +659,24 @@ namespace GTRC_Server_Basics.Discord
                         }
                     }
                 }
-                message += "\n**Teilnahmen:**\n";
-                foreach (Entry entry in listEntries)
+                if (listEntries.Count > 0)
                 {
-                    message += "- " + entry.Season.Series.Name + " " + entry.Season.Name + ":  #" + entry.RaceNumber.ToString() + " " + entry.Team.Name + "  |  ";
-                    List<User> listUsers = (await DbApi.DynCon.User.GetByEntry(entry.Id)).List;
-                    for (int index = 0; index < listUsers.Count; index++)
+                    message += "\n**Teilnahmen";
+                    if (!userIsAdmin) { message += " " + season.Series.Name + " " + season.Name; }
+                    message += ":**\n";
+                    foreach (Entry entry in listEntries)
                     {
-                        if (index > 0) { message += ", "; }
-                        message += UserFullDto.GetShortName(listUsers[index]);
+                        message += "- ";
+                        if (userIsAdmin) { message += entry.Season.Series.Name + " " + entry.Season.Name + ":  "; }
+                        message += "#" + entry.RaceNumber.ToString() + " " + entry.Team.Name + "  |  ";
+                        List<User> listUsers = (await DbApi.DynCon.User.GetByEntry(entry.Id)).List;
+                        for (int index = 0; index < listUsers.Count; index++)
+                        {
+                            if (index > 0) { message += ", "; }
+                            message += UserFullDto.GetShortName(listUsers[index]);
+                        }
+                        message += "\n";
                     }
-                    message += "\n";
                 }
             }
             await DiscordCommands.DiscordBot.SendMessage(message, channelId, DiscordMessageType.Organizations);
