@@ -84,7 +84,6 @@ namespace GTRC_Server_Basics.Discord
 
         public static async Task UpdateSeriesDiscordRolesAndNicknames(Season season)
         {
-            season = (await DbApi.DynCon.Season.GetById(1)).Object;
             if (DiscordCommands.DiscordBot.Guild is not null)
             {
                 SocketRole? driverRole = DiscordCommands.DiscordBot.Guild.GetRole(season.Series.DiscordDriverRoleId);
@@ -105,7 +104,7 @@ namespace GTRC_Server_Basics.Discord
                         if (respObjUser.Status == HttpStatusCode.OK)
                         {
                             string fullName = UserFullDto.GetFullName(respObjUser.Object);
-                            await discordUser.ModifyAsync(property => property.Nickname = fullName);
+                            try { await discordUser.ModifyAsync(property => property.Nickname = fullName); } catch { }
                         }
                     }
                 }
