@@ -49,6 +49,7 @@ namespace GTRC_Server_Basics.Discord
         public EntryEvent? EntryEvent;
         public EntryUserEvent? EntryUserEvent;
         public Car? Car;
+        public Team? Team;
 
         public string AdminRoleTag { get { return DiscordBot.GetTagByDiscordId(AdminRole.DiscordId); } }
         public string LogUnknownError { get { return AdminRoleTag + " Unbekannter Fehler."; } }
@@ -107,6 +108,7 @@ namespace GTRC_Server_Basics.Discord
             EntryEvent = null;
             EntryUserEvent = null;
             Car = null;
+            Team = null;
             if (UserMessage is not null)
             {
                 ChannelId = UserMessage.Channel.Id;
@@ -186,6 +188,52 @@ namespace GTRC_Server_Basics.Discord
             return false;
         }
 
+        public async Task<bool> UserIsAdminOrganization(bool replyWithError = true)
+        {
+            if (User is not null && Team is not null)
+            {
+                List<OrganizationUser> listOrgUsers = (await DbApi.DynCon.OrganizationUser.GetChildObjects(typeof(Organization), Team.OrganizationId)).List;
+                foreach (OrganizationUser orgUser in listOrgUsers) { if (orgUser.UserId == User.Id && orgUser.IsAdmin) { return true; } }
+                if (replyWithError && !UserIsAdmin)
+                {
+                    LogText = "Du bist nicht dazu berechtigt, den Team " + Team.Name + " umzubenennen, da du kein Admin der Organisation " + Team.Organization.Name + " bist.";
+                    await ErrorResponse();
+                }
+                return false;
+
+            }
+            return false;
+        }
+
+        public async Task<bool> UserIsAdminBothOrganizations(bool replyWithError = true)
+        {
+            if (User is not null && Entry is not null && Team is not null)
+            {
+                string orgaName = Entry.Team.Organization.Name;
+                List<OrganizationUser> listOrgUsers_Entry = (await DbApi.DynCon.OrganizationUser.GetChildObjects(typeof(Organization), Entry.Team.OrganizationId)).List;
+                foreach (OrganizationUser orgUser_Entry in listOrgUsers_Entry)
+                {
+                    if (orgUser_Entry.UserId == User.Id && orgUser_Entry.IsAdmin)
+                    {
+                        if (Entry.Team.OrganizationId == Team.OrganizationId) { return true; }
+                        List<OrganizationUser> listOrgUsers_Team = (await DbApi.DynCon.OrganizationUser.GetChildObjects(typeof(Organization), Team.OrganizationId)).List;
+                        foreach (OrganizationUser orgUser_Team in listOrgUsers_Team) { if (orgUser_Team.UserId == User.Id && orgUser_Team.IsAdmin) { return true; } }
+                        orgaName = Team.Organization.Name;
+                        break;
+                    }
+                }
+                if (replyWithError && !UserIsAdmin)
+                {
+                    LogText = "Du bist nicht dazu berechtigt, den Teilnehmer #" + Entry.RaceNumber.ToString() + " " + Entry.Team.Name +
+                        " auf das Team " + Team.Name + " umzuschreiben, da du kein Admin der Organisation " + orgaName + " bist.";
+                    await ErrorResponse();
+                }
+                return false;
+                
+            }
+            return false;
+        }
+
         public async Task<bool> IsValidRaceNumber(string strRaceNumber, bool replyWithError = true)
         {
             return await IsValidRaceNumber(ParseRaceNumber(strRaceNumber), replyWithError);
@@ -196,7 +244,8 @@ namespace GTRC_Server_Basics.Discord
             if (raceNumber <= Entry.MaxRaceNumber && raceNumber >= Entry.MinRaceNumber) { return true; }
             if (replyWithError)
             {
-                LogText = "Bitte eine gültige Startnummer angeben.";
+                LogText = "Bitte eine gültige Startnummer angeben. Es sind die Startnummern " + Entry.MinRaceNumber.ToString() + " - " +
+                    Entry.MaxRaceNumber.ToString() + " möglich.";
                 await ErrorResponse();
             }
             return false;
@@ -250,7 +299,7 @@ namespace GTRC_Server_Basics.Discord
                         foreach (Event _event in respListEve.List) { if (!_event.IsPreQualifying) { eventsCount++; } }
                         LogText = "Bitte eine Event-Nr zwischen 1 und " + eventsCount.ToString() + " angeben.";
                     }
-                    LogText += " Details zu den Events findest du im `!kalender`.";
+                    LogText += " Details zu den Events findest du im `!Kalender`.";
                     await ErrorResponse();
                 }
             }
@@ -321,9 +370,28 @@ namespace GTRC_Server_Basics.Discord
                 }
                 if (replyWithError)
                 {
-                    LogText = "Bitte eine gültige Fahrzeugnummer angeben. Du findest alle Fahrzeugnummern in der `!fahrzeugliste`.";
+                    LogText = "Bitte eine gültige Fahrzeugnummer angeben. Du findest alle Fahrzeugnummern in der `!Fahrzeugliste`.";
                     await ErrorResponse();
                 }
+            }
+            return false;
+        }
+
+        public async Task<bool> IsValidTeamId(string teamId, bool replyWithError = true)
+        {
+            return await IsValidTeamId(ParseTeamId(teamId), replyWithError);
+        }
+
+        public async Task<bool> IsValidTeamId(int teamId, bool replyWithError = true)
+        {
+            Team = null;
+            DbApiObjectResponse<Team> respObjTeam = await DbApi.DynCon.Team.GetById(teamId);
+            if (respObjTeam.Status == HttpStatusCode.OK) { Team = respObjTeam.Object; return true; }
+            if (replyWithError)
+            {
+                LogText = "Bitte eine gültige Teamnummer angeben.";
+                if (!UserIsAdmin) { LogText += " Du findest die Nummern aller Teams deiner Organisationen mit dem Befehl `!Teams`."; }
+                await ErrorResponse();
             }
             return false;
         }
@@ -344,6 +412,12 @@ namespace GTRC_Server_Basics.Discord
         {
             if (uint.TryParse(input, out uint output)) { return output; }
             return uint.MaxValue;
+        }
+
+        public static int ParseTeamId(string input)
+        {
+            if (int.TryParse(input, out int output)) { return output; }
+            return GlobalValues.NoId;
         }
     }
 }

@@ -129,6 +129,37 @@ namespace GTRC_Server_Basics.Discord
                 foreach (User user in listUsers) { message += "\n- " + UserFullDto.GetFullName(user); }
                 message += "\n\n";
             }
+            List<Team> listTeams = [];
+            List<Team> listAllTeams = (await DbApi.DynCon.Team.GetAll()).List;
+            foreach (Team team in listAllTeams) { if ((await DbApi.DynCon.Entry.GetChildObjects(typeof(Team), team.Id)).List.Count == 0) { listTeams.Add(team); } }
+            if (listTeams.Count > 0)
+            {
+                message += "**Teams ohne Entry:**";
+                foreach (Team team in listTeams) { message += "\n- " + team.Name; }
+                message += "\n\n";
+            }
+            List<Organization> listOrganizations = [];
+            List<Organization> listAllOrganizations = (await DbApi.DynCon.Organization.GetAll()).List;
+            foreach (Organization organization in listAllOrganizations)
+            {
+                listTeams = (await DbApi.DynCon.Team.GetChildObjects(typeof(Organization), organization.Id)).List;
+                foreach (Team team in listTeams) { if ((await DbApi.DynCon.Entry.GetChildObjects(typeof(Team), team.Id)).List.Count == 0) { listOrganizations.Add(organization); } }
+            }
+            if (listOrganizations.Count > 0)
+            {
+                message += "**Organisationen ohne Entry:**";
+                foreach (Organization organization in listOrganizations)
+                {
+                    message += "\n- " + organization.Name + ":  ";
+                    listTeams = (await DbApi.DynCon.Team.GetChildObjects(typeof(Organization), organization.Id)).List;
+                    for (int index = 0; index < listTeams.Count; index++)
+                    {
+                        if (index > 0) { message += "  |  "; }
+                        message += listTeams[index].Name;
+                    }
+                }
+                message += "\n\n";
+            }
             listUsers = (await DbApi.DynCon.User.GetViolationsAllowEntriesShareDriverSameEvent(season.Id)).List;
             if (listUsers.Count > 0)
             {
@@ -189,7 +220,7 @@ namespace GTRC_Server_Basics.Discord
                 foreach (Entry entry in listEntries) { message += "\n- " + await AddEntryToDiscordMessage(entry, false, true); }
                 message += "\n\n";
             }
-            List<Team> listTeams = (await DbApi.DynCon.Team.GetViolationsMinEntriesPerTeam(season.Id)).List;
+            listTeams = (await DbApi.DynCon.Team.GetViolationsMinEntriesPerTeam(season.Id)).List;
             if (listTeams.Count > 0)
             {
                 message += "**Teams mit weniger als " + season.MinEntriesPerTeam.ToString();
@@ -574,7 +605,7 @@ namespace GTRC_Server_Basics.Discord
             _ = DiscordCommands.DiscordBot.SendMessage(message, channelId, DiscordMessageType.Cars);
         }
 
-        public static async Task ShowOrganizations(Season season, ulong channelId, List<Organization> listOrganizations, bool userIsAdmin)
+        public static async Task ShowOrganizations(Season season, ulong channelId, List<Organization> listOrganizations, bool showAllSeasons = false)
         {
             string message = string.Empty;
             foreach (Organization organization in listOrganizations)
@@ -632,7 +663,7 @@ namespace GTRC_Server_Basics.Discord
                     List<Entry> listEntriesTemp = (await DbApi.DynCon.Entry.GetChildObjects(typeof(Team), team.Id)).List;
                     foreach (Entry entry in listEntriesTemp)
                     {
-                        if (!bScripts.ListContainsId(listEntries, entry) && (userIsAdmin || entry.SeasonId == season.Id)) { listEntries.Add(entry); }
+                        if (!bScripts.ListContainsId(listEntries, entry) && (showAllSeasons || entry.SeasonId == season.Id)) { listEntries.Add(entry); }
                     }
                 }
                 for (int index1 = 0; index1 < listEntries.Count - 1; index1++)
@@ -662,12 +693,12 @@ namespace GTRC_Server_Basics.Discord
                 if (listEntries.Count > 0)
                 {
                     message += "\n**Teilnahmen";
-                    if (!userIsAdmin) { message += " " + season.Series.Name + " " + season.Name; }
+                    if (!showAllSeasons) { message += " " + season.Series.Name + " " + season.Name; }
                     message += ":**\n";
                     foreach (Entry entry in listEntries)
                     {
                         message += "- ";
-                        if (userIsAdmin) { message += entry.Season.Series.Name + " " + entry.Season.Name + ":  "; }
+                        if (showAllSeasons) { message += entry.Season.Series.Name + " " + entry.Season.Name + ":  "; }
                         message += "#" + entry.RaceNumber.ToString() + " " + entry.Team.Name + "  |  ";
                         List<User> listUsers = (await DbApi.DynCon.User.GetByEntry(entry.Id)).List;
                         for (int index = 0; index < listUsers.Count; index++)
