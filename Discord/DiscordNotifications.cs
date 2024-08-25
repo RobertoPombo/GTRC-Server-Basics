@@ -678,14 +678,14 @@ namespace GTRC_Server_Basics.Discord
                     {
                         if (listEntries[index1].SeasonId == listEntries[index2].SeasonId)
                         {
-                            if (listEntries[index1].RaceNumber == listEntries[index2].RaceNumber)
+                            if (String.Compare(listEntries[index1].Team.Name, listEntries[index2].Team.Name) == 0)
                             {
-                                if (String.Compare(listEntries[index1].Team.Name, listEntries[index2].Team.Name) > 0)
+                                if (listEntries[index1].RaceNumber > listEntries[index2].RaceNumber)
                                 {
                                     (listEntries[index1], listEntries[index2]) = (listEntries[index2], listEntries[index1]);
                                 }
                             }
-                            else if (listEntries[index1].RaceNumber > listEntries[index2].RaceNumber)
+                            else if (String.Compare(listEntries[index1].Team.Name, listEntries[index2].Team.Name) > 0)
                             {
                                 (listEntries[index1], listEntries[index2]) = (listEntries[index2], listEntries[index1]);
                             }
