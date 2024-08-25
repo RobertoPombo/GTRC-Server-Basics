@@ -120,7 +120,7 @@ namespace GTRC_Server_Basics.Discord
             if (listUsers.Count > 0)
             {
                 message += "\n\n**Fahrer ohne Discord-Id:**";
-                foreach (User user in listUsers) { message += "\n- " + UserFullDto.GetFullName(user); }
+                foreach (User user in listUsers) { message += "\n- #" + user.Id.ToString() + "  -  " + UserFullDto.GetFullName(user); }
             }
             listOrganizations = [];
             List<Organization> listAllOrganizations = (await DbApi.DynCon.Organization.GetAll()).List;

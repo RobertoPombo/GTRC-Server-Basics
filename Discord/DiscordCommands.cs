@@ -253,6 +253,36 @@ namespace GTRC_Server_Basics.Discord
             return false;
         }
 
+        public async Task<bool> IsValidDiscordId(string strDiscordId, bool replyWithError = true)
+        {
+            return await IsValidDiscordId(ParseDiscordId(strDiscordId), replyWithError);
+        }
+
+        public async Task<bool> IsValidDiscordId(ulong discordId, bool replyWithError = true)
+        {
+            if (Scripts.IsValidDiscordId(discordId)) { return true; }
+            if (replyWithError) { LogText = "Bitte eine gültige Discord-Id angeben."; await ErrorResponse(); }
+            return false;
+        }
+
+        public async Task<bool> IsValidUserId(string strUserId, bool replyWithError = true)
+        {
+            return await IsValidUserId(ParseId(strUserId), replyWithError);
+        }
+
+        public async Task<bool> IsValidUserId(int userId, bool replyWithError = true)
+        {
+            User = null;
+            DbApiObjectResponse<User> respObjUser = await DbApi.DynCon.User.GetById(userId);
+            if (respObjUser.Status == HttpStatusCode.OK) { User = respObjUser.Object; return true; }
+            if (replyWithError)
+            {
+                LogText = "Bitte eine gültige Fahrernummer angeben. Mit dem Befehl `!Update` kannst du dir die Nummern der Fahrer ohne Discord-Id anzeigen lassen.";
+                await ErrorResponse();
+            }
+            return false;
+        }
+
         public async Task<bool> IsValidRaceNumber(string strRaceNumber, bool replyWithError = true)
         {
             return await IsValidRaceNumber(ParseRaceNumber(strRaceNumber), replyWithError);
@@ -418,7 +448,7 @@ namespace GTRC_Server_Basics.Discord
 
         public async Task<bool> IsValidTeamId(string teamId, bool replyWithError = true)
         {
-            return await IsValidTeamId(ParseTeamId(teamId), replyWithError);
+            return await IsValidTeamId(ParseId(teamId), replyWithError);
         }
 
         public async Task<bool> IsValidTeamId(int teamId, bool replyWithError = true)
@@ -460,6 +490,18 @@ namespace GTRC_Server_Basics.Discord
             return false;
         }
 
+        public static int ParseId(string input)
+        {
+            if (int.TryParse(input, out int output)) { return output; }
+            return GlobalValues.NoId;
+        }
+
+        public static ulong ParseDiscordId(string input)
+        {
+            if (ulong.TryParse(input, out ulong output)) { return output; }
+            return GlobalValues.NoDiscordId;
+        }
+
         public static ushort ParseRaceNumber(string input)
         {
             if (ushort.TryParse(input, out ushort output)) { return output; }
@@ -482,12 +524,6 @@ namespace GTRC_Server_Basics.Discord
         {
             if (uint.TryParse(input, out uint output)) { return output; }
             return uint.MaxValue;
-        }
-
-        public static int ParseTeamId(string input)
-        {
-            if (int.TryParse(input, out int output)) { return output; }
-            return GlobalValues.NoId;
         }
     }
 }
