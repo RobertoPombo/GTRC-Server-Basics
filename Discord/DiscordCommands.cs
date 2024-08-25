@@ -188,7 +188,25 @@ namespace GTRC_Server_Basics.Discord
             return false;
         }
 
-        public async Task<bool> UserIsAdminOrganization(bool replyWithError = true)
+        public async Task<bool> UserIsAdminOrganizationOfEntry(bool replyWithError = true)
+        {
+            if (User is not null && Entry is not null)
+            {
+                List<OrganizationUser> listOrgUsers = (await DbApi.DynCon.OrganizationUser.GetChildObjects(typeof(Organization), Entry.Team.OrganizationId)).List;
+                foreach (OrganizationUser orgUser in listOrgUsers) { if (orgUser.UserId == User.Id && orgUser.IsAdmin) { return true; } }
+                if (replyWithError && !UserIsAdmin)
+                {
+                    LogText = "Du bist nicht dazu berechtigt, Änderungen für den Teilnehmer #" + Entry.RaceNumber.ToString() + " " + Entry.Team.Name +
+                        " vorzunehmen, da du kein Admin der Organisation " + Entry.Team.Organization.Name + " bist.";
+                    await ErrorResponse();
+                }
+                return false;
+
+            }
+            return false;
+        }
+
+        public async Task<bool> UserIsAdminOrganizationOfTeam(bool replyWithError = true)
         {
             if (User is not null && Team is not null)
             {
@@ -196,7 +214,8 @@ namespace GTRC_Server_Basics.Discord
                 foreach (OrganizationUser orgUser in listOrgUsers) { if (orgUser.UserId == User.Id && orgUser.IsAdmin) { return true; } }
                 if (replyWithError && !UserIsAdmin)
                 {
-                    LogText = "Du bist nicht dazu berechtigt, den Team " + Team.Name + " umzubenennen, da du kein Admin der Organisation " + Team.Organization.Name + " bist.";
+                    LogText = "Du bist nicht dazu berechtigt, Änderungen für das Team " + Team.Name +
+                        " vorzunehmen, da du kein Admin der Organisation " + Team.Organization.Name + " bist.";
                     await ErrorResponse();
                 }
                 return false;
@@ -392,6 +411,31 @@ namespace GTRC_Server_Basics.Discord
                 LogText = "Bitte eine gültige Teamnummer angeben.";
                 if (!UserIsAdmin) { LogText += " Du findest die Nummern aller Teams deiner Organisationen mit dem Befehl `!Teams`."; }
                 await ErrorResponse();
+            }
+            return false;
+        }
+
+        public async Task<bool> IsValidNewTeamName(string newTeamName, bool replyWithError = true)
+        {
+            DbApiObjectResponse<Team> respObjTeam = await DbApi.DynCon.Team.GetByUniqProps(new() { Dto = new TeamUniqPropsDto0() { Name = newTeamName } });
+            if (respObjTeam.Status == HttpStatusCode.NotFound) { return true; }
+            if (replyWithError)
+            {
+                if (Team is not null && respObjTeam.Object.Id == Team.Id) { LogText = "Das Team heißt bereits " + Team.Name + "."; _ = ErrorResponse(); }
+                else if (Entry is not null && respObjTeam.Object.Id == Entry.Team.Id) { LogText = "Das Team heißt bereits " + Entry.Team.Name + "."; _ = ErrorResponse(); }
+                else if ((Team is not null && respObjTeam.Object.OrganizationId == Team.OrganizationId) ||
+                    (Entry is not null && respObjTeam.Object.OrganizationId == Entry.Team.OrganizationId))
+                {
+                    LogText = "Es gibt bereits ein Team mit dem Namen " + respObjTeam.Object.Name + " in der Organisation " + respObjTeam.Object.Organization.Name +
+                        ". Bitte suche dir einen anderen Namen für dieses Team aus.";
+                    _ = ErrorResponse();
+                }
+                else
+                {
+                    LogText = "Die Organisation " + respObjTeam.Object.Organization.Name + " hat bereits ein Team mit dem Namen " + respObjTeam.Object.Name +
+                        " gegründet. Bitte suche dir einen anderen Namen für dein Team aus.";
+                    _ = ErrorResponse();
+                }
             }
             return false;
         }
