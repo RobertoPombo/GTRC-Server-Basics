@@ -244,7 +244,7 @@ namespace GTRC_Server_Basics.Discord
                 }
             }
 
-            string messageHeader = "Anmeldungen " + season.Name + ":  " + (await DbApi.DynCon.Entry.GetChildObjects(typeof(Season), season.Id)).List.Count.ToString();
+            string messageHeader = "Teilnehmer " + season.Name + ":  " + (await DbApi.DynCon.Entry.GetChildObjects(typeof(Season), season.Id)).List.Count.ToString();
             if (message.Length == 0) { message = messageHeader + "\n" + "Unglöste Konflikte:  0"; }
             else { message = "**" + messageHeader + "**" + message[..^2]; }
             await DiscordCommands.DiscordBot.SendMessage(message, ChannelIds[DiscordChannelType.Log], DiscordMessageType.SeasonSettingsViolations);
