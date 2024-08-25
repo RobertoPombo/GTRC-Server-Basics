@@ -137,8 +137,10 @@ namespace GTRC_Server_Basics.Discord
             List<Organization> listAllOrganizations = (await DbApi.DynCon.Organization.GetAll()).List;
             foreach (Organization organization in listAllOrganizations)
             {
+                bool hasEntries = false;
                 listTeams = (await DbApi.DynCon.Team.GetChildObjects(typeof(Organization), organization.Id)).List;
-                foreach (Team team in listTeams) { if ((await DbApi.DynCon.Entry.GetChildObjects(typeof(Team), team.Id)).List.Count == 0) { listOrganizations.Add(organization); } }
+                foreach (Team team in listTeams) { if ((await DbApi.DynCon.Entry.GetChildObjects(typeof(Team), team.Id)).List.Count > 0) { hasEntries = true; } }
+                if (!hasEntries) { listOrganizations.Add(organization); }
             }
             if (listOrganizations.Count > 0)
             {
