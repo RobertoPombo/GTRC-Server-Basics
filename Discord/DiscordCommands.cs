@@ -294,6 +294,31 @@ namespace GTRC_Server_Basics.Discord
             return false;
         }
 
+        public async Task<bool> IsValidSeasonNr(string strSeasonNr, bool replyWithError = true)
+        {
+            return await IsValidSeasonNr(ParseSeasonNr(strSeasonNr), replyWithError);
+        }
+
+        public async Task<bool> IsValidSeasonNr(int seasonNr, bool replyWithError = true)
+        {
+            Season = null;
+            Event = null;
+            EntryEvent = null;
+            EntryUserEvent = null;
+            if (Series is not null)
+            {
+                DbApiObjectResponse<Season> respObjSea = await DbApi.DynCon.Season.GetByNr(Series.Id, seasonNr);
+                if (respObjSea.Status == HttpStatusCode.OK) { Season = respObjSea.Object; return true; }
+                if (replyWithError)
+                {
+                    int seasonsCount = (await DbApi.DynCon.Season.GetChildObjects(typeof(Series), Series.Id)).List.Count;
+                    LogText = "Bitte eine Saison-Nr zwischen 1 und " + seasonsCount.ToString() + " angeben.";
+                    await ErrorResponse();
+                }
+            }
+            return false;
+        }
+
         public async Task<bool> IsValidEventNr(string strEventNr, bool replyWithError = true)
         {
             return await IsValidEventNr(ParseEventNr(strEventNr), replyWithError);
@@ -310,15 +335,10 @@ namespace GTRC_Server_Basics.Discord
                 if (respObjEve.Status == HttpStatusCode.OK) { Event = respObjEve.Object; return true; }
                 if (replyWithError)
                 {
-                    LogText = "Bitte eine gültige Event-Nr angeben.";
-                    DbApiListResponse<Event> respListEve = await DbApi.DynCon.Event.GetChildObjects(typeof(Season), Season.Id);
-                    if (respListEve.Status == HttpStatusCode.OK)
-                    {
-                        int eventsCount = 0;
-                        foreach (Event _event in respListEve.List) { if (!_event.IsPreQualifying) { eventsCount++; } }
-                        LogText = "Bitte eine Event-Nr zwischen 1 und " + eventsCount.ToString() + " angeben.";
-                    }
-                    LogText += " Details zu den Events findest du im `!Kalender`.";
+                    List<Event> listEvents = (await DbApi.DynCon.Event.GetChildObjects(typeof(Season), Season.Id)).List;
+                    int eventsCount = 0;
+                    foreach (Event _event in listEvents) { if (!_event.IsPreQualifying) { eventsCount++; } }
+                    LogText = "Bitte eine Event-Nr zwischen 1 und " + eventsCount.ToString() + " angeben. Details zu den Events findest du im `!Kalender`.";
                     await ErrorResponse();
                 }
             }
@@ -444,6 +464,12 @@ namespace GTRC_Server_Basics.Discord
         {
             if (ushort.TryParse(input, out ushort output)) { return output; }
             return ushort.MaxValue;
+        }
+
+        public static int ParseSeasonNr(string input)
+        {
+            if (int.TryParse(input, out int output)) { return output; }
+            return int.MinValue;
         }
 
         public static int ParseEventNr(string input)
