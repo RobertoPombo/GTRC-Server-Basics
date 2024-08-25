@@ -130,14 +130,6 @@ namespace GTRC_Server_Basics.Discord
                 message += "\n\n";
             }
             List<Team> listTeams = [];
-            List<Team> listAllTeams = (await DbApi.DynCon.Team.GetAll()).List;
-            foreach (Team team in listAllTeams) { if ((await DbApi.DynCon.Entry.GetChildObjects(typeof(Team), team.Id)).List.Count == 0) { listTeams.Add(team); } }
-            if (listTeams.Count > 0)
-            {
-                message += "**Teams ohne Entry:**";
-                foreach (Team team in listTeams) { message += "\n- " + team.Name; }
-                message += "\n\n";
-            }
             List<Organization> listOrganizations = [];
             List<Organization> listAllOrganizations = (await DbApi.DynCon.Organization.GetAll()).List;
             foreach (Organization organization in listAllOrganizations)
@@ -158,6 +150,14 @@ namespace GTRC_Server_Basics.Discord
                         message += listTeams[index].Name;
                     }
                 }
+                message += "\n\n";
+            }
+            List<Team> listAllTeams = (await DbApi.DynCon.Team.GetAll()).List;
+            foreach (Team team in listAllTeams) { if ((await DbApi.DynCon.Entry.GetChildObjects(typeof(Team), team.Id)).List.Count == 0) { listTeams.Add(team); } }
+            if (listTeams.Count > 0)
+            {
+                message += "**Teams ohne Entry:**";
+                foreach (Team team in listTeams) { message += "\n- " + team.Name; }
                 message += "\n\n";
             }
             listUsers = (await DbApi.DynCon.User.GetViolationsAllowEntriesShareDriverSameEvent(season.Id)).List;
