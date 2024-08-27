@@ -87,7 +87,10 @@ namespace GTRC_Server_Basics.Discord
                         IReadOnlyCollection<SocketRole> discordRoles = discordUser.Roles;
                         foreach (SocketRole role in discordRoles) { if (role.Id == driverRole.Id) { hasSeriesDriverRole = true; break; } }
                         DbApiObjectResponse<User> respObjUser = await DbApi.DynCon.User.GetByUniqProps(new() { Index = 1, Dto = new UserUniqPropsDto1() { DiscordId = discordUser.Id } });
-                        if (respObjUser.Status == HttpStatusCode.OK && (await DbApi.DynCon.Entry.GetByUserSeason(respObjUser.Object.Id, season.Id)).List.Count > 0)
+                        List<Entry> listEntries = (await DbApi.DynCon.Entry.GetByUserSeason(respObjUser.Object.Id, season.Id)).List;
+                        bool isRegisteredEntry = false;
+                        foreach (Entry entry in listEntries) { if (EntryFullDto.GetRegisterState(entry)) { isRegisteredEntry = true; break; } }
+                        if (respObjUser.Status == HttpStatusCode.OK && isRegisteredEntry)
                         {
                             if (!hasSeriesDriverRole) { await discordUser.AddRoleAsync(driverRole.Id); }
                         }
