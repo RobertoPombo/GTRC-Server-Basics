@@ -132,7 +132,6 @@ namespace GTRC_Server_Basics.Discord
                 if (respObjUser.Status == HttpStatusCode.OK)
                 {
                     User = respObjUser.Object;
-                    DbApiListResponse<Role> respListRole = await DbApi.DynCon.Role.GetByUser(User.Id);
                     AuthorRoles = (await DbApi.DynCon.Role.GetByUser(User.Id)).List;
                     foreach (Role role in AuthorRoles) { if (role.Name == AdminRoleName) { UserIsAdmin = true; break; } }
                 }

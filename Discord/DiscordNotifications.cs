@@ -330,7 +330,8 @@ namespace GTRC_Server_Basics.Discord
             //Placeholder
             int slotsTakenTotal = 0;
             int slotsAvailableTotal = _event.Track.ServerSlotsCount;
-            List<EntryEvent> listEntriesEvents = [];
+            List<EntryEvent> listEntryEvents = [];
+            List<EntryEvent> listEntryEvents_PrioritySort = [];
             List<Entry> listEntries = (await DbApi.DynCon.Entry.GetChildObjects(typeof(Season), _event.SeasonId)).List;
             List<Event> listEvents = Scripts.SortByDate((await DbApi.DynCon.Event.GetChildObjects(typeof(Season), _event.SeasonId)).List);
             foreach (Entry entry in listEntries)
@@ -338,15 +339,26 @@ namespace GTRC_Server_Basics.Discord
                 EntryEventUniqPropsDto0 dto = new() { EntryId = entry.Id, EventId = _event.Id };
                 EntryEvent entryEvent = (await DbApi.DynCon.EntryEvent.GetAnyByUniqProps(dto)).Object;
                 if (EntryEventFullDto.GetRegisterState(entryEvent) && EntryEventFullDto.GetSignInState(entryEvent)) { slotsTakenTotal++; }
-                listEntriesEvents.Add(entryEvent);
+                listEntryEvents.Add(entryEvent);
+                listEntryEvents_PrioritySort.Add(entryEvent);
             }
-            for (int index1 = 0; index1 < listEntriesEvents.Count - 1; index1++)
+            for (int index1 = 0; index1 < listEntryEvents.Count - 1; index1++)
             {
-                for (int index2 = index1 + 1; index2 < listEntriesEvents.Count; index2++)
+                for (int index2 = index1 + 1; index2 < listEntryEvents.Count; index2++)
                 {
-                    if (listEntriesEvents[index1].Entry.RaceNumber > listEntriesEvents[index2].Entry.RaceNumber)
+                    if (listEntryEvents[index1].Entry.RaceNumber > listEntryEvents[index2].Entry.RaceNumber)
                     {
-                        (listEntriesEvents[index1], listEntriesEvents[index2]) = (listEntriesEvents[index2], listEntriesEvents[index1]);
+                        (listEntryEvents[index1], listEntryEvents[index2]) = (listEntryEvents[index2], listEntryEvents[index1]);
+                    }
+                }
+            }
+            for (int index1 = 0; index1 < listEntryEvents_PrioritySort.Count - 1; index1++)
+            {
+                for (int index2 = index1 + 1; index2 < listEntryEvents_PrioritySort.Count; index2++)
+                {
+                    if (listEntryEvents_PrioritySort[index1].Priority > listEntryEvents_PrioritySort[index2].Priority)
+                    {
+                        (listEntryEvents_PrioritySort[index1], listEntryEvents_PrioritySort[index2]) = (listEntryEvents_PrioritySort[index2], listEntryEvents_PrioritySort[index1]);
                     }
                 }
             }
@@ -355,7 +367,7 @@ namespace GTRC_Server_Basics.Discord
                 slotsTakenTotal.ToString() + "/" + slotsAvailableTotal.ToString() + "**\n";
             string newMessagePart = "";
             uint pos = 1;
-            foreach (EntryEvent entryEvent in listEntriesEvents)
+            foreach (EntryEvent entryEvent in listEntryEvents)
             {
                 if (EntryEventFullDto.GetRegisterState(entryEvent) && EntryEventFullDto.GetSignInState(entryEvent))
                 {
@@ -366,7 +378,18 @@ namespace GTRC_Server_Basics.Discord
 
             newMessagePart = "";
             pos = 1;
-            foreach (EntryEvent entryEvent in listEntriesEvents)
+            foreach (EntryEvent entryEvent in listEntryEvents_PrioritySort)
+            {
+                if (EntryEventFullDto.GetRegisterState(entryEvent) && EntryEventFullDto.GetSignInState(entryEvent) && !entryEvent.IsOnEntrylist) //todo isonentrylist update
+                {
+                    //(newMessagePart, pos) = await AddLineEntrylist(newMessagePart, pos, entryEvent, true, showCars, true);
+                }
+            }
+            if (pos > 1) { message += "\n**Warteliste (" + (pos - 1).ToString() + ")**\n" + newMessagePart; }
+
+            newMessagePart = "";
+            pos = 1;
+            foreach (EntryEvent entryEvent in listEntryEvents)
             {
                 if (EntryEventFullDto.GetRegisterState(entryEvent) && !EntryEventFullDto.GetSignInState(entryEvent))
                 {
@@ -377,7 +400,7 @@ namespace GTRC_Server_Basics.Discord
 
             newMessagePart = "";
             pos = 1;
-            foreach (EntryEvent entryEvent in listEntriesEvents)
+            foreach (EntryEvent entryEvent in listEntryEvents)
             {
                 if (!EntryEventFullDto.GetRegisterState(entryEvent) && listEvents.Count > 0 && entryEvent.Entry.SignOutDate > listEvents[0].Date)
                 {
@@ -405,7 +428,7 @@ namespace GTRC_Server_Basics.Discord
             bool showCar = false, bool showCarChangeCount = false, bool showPos = false, bool isBanned = false)
         {
             Entry entry = entryEvent.Entry;
-            List<User> listUsers = (await DbApi.DynCon.User.GetByEntry(entry.Id)).List;
+            List<User> listUsers = (await DbApi.DynCon.User.GetByEntryEvent(entry.Id, entryEvent.EventId)).List;
             Car? car = null;
             DbApiObjectResponse<EntryDatetime> respObjEntDat = await DbApi.DynCon.EntryDatetime.GetAnyByUniqProps(new() { EntryId = entry.Id, Date = entryEvent.Event.Date });
             if (respObjEntDat.Status == HttpStatusCode.OK) { car = respObjEntDat.Object.Car; }
