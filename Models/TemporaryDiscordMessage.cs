@@ -17,7 +17,7 @@ namespace GTRC_Server_Basics.Models
         {
             if ((
             message.Type == DiscordMessageType.Commands ||
-            message.Type == DiscordMessageType.BoP ||
+            message.Type == DiscordMessageType.Bop ||
             message.Type == DiscordMessageType.Events ||
             message.Type == DiscordMessageType.Cars ||
             message.Type == DiscordMessageType.Organizations ||
@@ -27,7 +27,7 @@ namespace GTRC_Server_Basics.Models
             Type == DiscordMessageType.Entries ||
             Type == DiscordMessageType.NewEntries ||
             Type == DiscordMessageType.SeasonSettingsViolations ||
-            Type == DiscordMessageType.BoP ||
+            Type == DiscordMessageType.Bop ||
             Type == DiscordMessageType.Events ||
             Type == DiscordMessageType.Cars ||
             Type == DiscordMessageType.Organizations ||

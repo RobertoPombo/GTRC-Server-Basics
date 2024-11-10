@@ -516,17 +516,17 @@ namespace GTRC_Server_Basics.Discord
                         message += eventCar.BallastKg.ToString() + " kg    ";
                         //message += eventCar.Restrictor.ToString() + "%  ";
                         message += eventCar.Car.Name;
-                        if (_event.Season.DateBoPFreeze < _event.Date && eventCar.Count != eventCar.CountBop)
+                        if (_event.Season.DateBopFreeze < _event.Date && eventCar.Count != eventCar.CountBop)
                         {
                             message += "    " + eventCar.CountBop.ToString() + "x am " +
-                                bScripts.Date2String(_event.Season.DateBoPFreeze.ToLocalTime(), "DD.MM.YY") + " um " +
-                                bScripts.Date2String(_event.Season.DateBoPFreeze.ToLocalTime(), "hh:mm") + " Uhr";
+                                bScripts.Date2String(_event.Season.DateBopFreeze.ToLocalTime(), "DD.MM.YY") + " um " +
+                                bScripts.Date2String(_event.Season.DateBopFreeze.ToLocalTime(), "hh:mm") + " Uhr";
                         }
                         message += "\n";
                     }
                 }
             }
-            await DiscordCommands.DiscordBot.SendMessage(message, ChannelIds[DiscordChannelType.Registration], DiscordMessageType.BoP);
+            await DiscordCommands.DiscordBot.SendMessage(message, ChannelIds[DiscordChannelType.Registration], DiscordMessageType.Bop);
         }
 
         public static async Task ShowEvents(Season season, ulong channelId, List<Event> listEvents)
@@ -537,7 +537,14 @@ namespace GTRC_Server_Basics.Discord
             int eventNr = 1;
             for (int index = 0; index < listEvents.Count; index++)
             {
-                if (listEvents[index].IsPreQualifying)
+                if ((await DbApi.DynCon.Event.GetHasSessionScorePoints(listEvents[index].Id)).Value ?? false)
+                {
+                    message += eventNr.ToString() + ".  ";
+                    message += bScripts.Date2String(listEvents[index].Date.ToLocalTime(), "DD.MM.");
+                    message += "  " + listEvents[index].Track.Name + "\n";
+                    eventNr++;
+                }
+                else
                 {
                     TimeSpan totalDuration = TimeSpan.FromMinutes(0);
                     DbApiListResponse<Session> respListSes = await DbApi.DynCon.Session.GetChildObjects(typeof(Event), listEvents[index].Id);
@@ -554,13 +561,6 @@ namespace GTRC_Server_Basics.Discord
                     message += "  Vorqualifikation #" + preQualiNr.ToString();
                     message += "  " + listEvents[index].Track.Name + "\n";
                     preQualiNr++;
-                }
-                else
-                {
-                    message += eventNr.ToString() + ".  ";
-                    message += bScripts.Date2String(listEvents[index].Date.ToLocalTime(), "DD.MM.");
-                    message += "  " + listEvents[index].Track.Name + "\n";
-                    eventNr++;
                 }
             }
             _ = DiscordCommands.DiscordBot.SendMessage(message, channelId, DiscordMessageType.Events);

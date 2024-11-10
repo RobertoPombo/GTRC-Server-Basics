@@ -366,7 +366,7 @@ namespace GTRC_Server_Basics.Discord
                 {
                     List<Event> listEvents = (await DbApi.DynCon.Event.GetChildObjects(typeof(Season), Season.Id)).List;
                     int eventsCount = 0;
-                    foreach (Event _event in listEvents) { if (!_event.IsPreQualifying) { eventsCount++; } }
+                    foreach (Event _event in listEvents) { if ((await DbApi.DynCon.Event.GetHasSessionScorePoints(_event.Id)).Value ?? false) { eventsCount++; } }
                     LogText = "Bitte eine Event-Nr zwischen 1 und " + eventsCount.ToString() + " angeben. Details zu den Events findest du im `!Kalender`.";
                     await ErrorResponse();
                 }
