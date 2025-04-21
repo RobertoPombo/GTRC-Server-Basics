@@ -70,7 +70,11 @@ namespace GTRC_Server_Basics.Discord
             if (message.Length > 2) {  await DiscordCommands.DiscordBot.SendMessage(message[..^2], ChannelIds[DiscordChannelType.Log], DiscordMessageType.NewEntries); }
             if (message.Length > 2 || forceUpdateEntryConflicts) { await ShowSeasonSettingsViolations(season); }
             List<Event> listEvents = (await DbApi.DynCon.Event.GetChildObjects(typeof(Season), season.Id)).List;
-            foreach (Event _event in listEvents) { await DbApi.DynCon.EventCar.UpdateBop(_event.Id); await DbApi.DynCon.EntryUserEvent.UpdateNames3Digits(_event.Id); }
+            foreach (Event _event in listEvents)
+            {
+                await DbApi.DynCon.EventCar.UpdateBop(_event.Id);
+                await DbApi.DynCon.EntryUserEvent.UpdateNames3Digits(_event.Id);
+            }
         }
 
         public static async Task UpdateSeriesDiscordRolesAndNicknames(Season season)
