@@ -67,7 +67,7 @@ namespace GTRC_Server_Basics.Discord
                 foreach (Entry entry in entriesUpdatedRaceNumber) { message += "\n- " + await AddEntryToDiscordMessage(entry); }
                 message += "\n\n";
             }
-            if (message.Length > 2) {  await DiscordCommands.DiscordBot.SendMessage(message[..^2], ChannelIds[DiscordChannelType.Log], DiscordMessageType.NewEntries); }
+            if (message.Length > 2) {  await DiscordCommands.DiscordBot.SendMessage(message, ChannelIds[DiscordChannelType.Log], DiscordMessageType.NewEntries); }
             if (message.Length > 2 || forceUpdateEntryConflicts) { await ShowSeasonSettingsViolations(season); }
             List<Event> listEvents = (await DbApi.DynCon.Event.GetChildObjects(typeof(Season), season.Id)).List;
             foreach (Event _event in listEvents)
